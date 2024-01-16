@@ -65,7 +65,7 @@ pub fn send_message_evm(
 ) -> Result<Response, CustomContractError> {
     // Message payload to be received by the destination
      let message_payload = encode(&vec![
-         Token::String(message),
+        Token::String(message),
      ]);
 
      let coin = &info.funds[0];
@@ -152,9 +152,11 @@ pub fn receive_message_evm(
         payload.as_slice(),
     ).unwrap();
 
+    let sender = decoded[0].to_string();
     let message = decoded[1].to_string();
 
     let message_payload = encode(&vec![
+        Token::String(sender),
         Token::String(message),
     ]);
 
@@ -165,13 +167,18 @@ pub fn receive_message_evm(
         amount: coin.amount.clone().to_string(),
     };
 
+    let custom_callback_amount = crate::ibc::Coin {
+        denom: coin.denom.clone(),
+        amount: "100000".to_string(),
+    };
+
    let gmp_message: GmpMessage = GmpMessage {
        destination_chain: source_chain,
        destination_address: source_address,
        payload: message_payload.to_vec(),
        type_: 1,
        fee: Some(Fee {
-        amount: coin.amount.clone().to_string(), // Make sure to handle amounts accurately
+        amount: custom_callback_amount.amount.clone().to_string(), // Make sure to handle amounts accurately
         recipient: "axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89".to_string(),
         }),
    };
@@ -183,7 +190,7 @@ pub fn receive_message_evm(
    let ibc_message = crate::ibc::MsgTransfer {
     source_port: "transfer".to_string(),
     source_channel: "channel-20".to_string(),
-    token: Some(my_coin.into()),
+    token: Some(custom_callback_amount.into()),
     sender: env.contract.address.to_string(),
     receiver: "axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5"
         .to_string(),
